@@ -103,7 +103,7 @@ function WeekTotal({ bin, secret }) {
   const [dayAmount, setDayAmount] = useState(0);
 
   function weekAmount({ mon, tue, wed, thur, fri, sat, sun }) {
-    return mon + tue + wed + thur + fri + sat + sun;
+    return Math.round(mon + tue + wed + thur + fri + sat + sun);
   }
 
   async function getAllData() {
