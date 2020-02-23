@@ -19,7 +19,7 @@ async function getBin({ bin, secret }) {
     throw new Error("Get Failed");
   }
   let result = await response.json();
-  console.log("data result", result);
+  console.log({result});
   return result;
 }
 
@@ -36,8 +36,94 @@ async function updateBin({ data, bin, secret }) {
     throw new Error("Put Failed");
   }
   let result = await response.json();
-  console.log("put data result", result);
+  console.log({result});
   return result;
+}
+
+const blankWeek = {
+  goal: 0,
+  week: 0,
+  mon: 0,
+  tue: 0,
+  wed: 0,
+  thur: 0,
+  fri: 0,
+  sat: 0,
+  sun: 0
+};
+
+function WeeksList({ bin, secret }) {
+  const [rawWeeks, setRawWeeks] = useState(null);
+  const [goal, setGoal] = useState(0);
+
+  useEffect(async () => {
+    if (bin && secret) {
+      const result = await getBin({ bin, secret });
+      setRawWeeks(result);
+    }
+  }, [bin, secret]);
+  return html`
+    <h3>Raw Weeks List</h3>
+    <ul>
+      ${rawWeeks &&
+        rawWeeks.weeks.map(
+          a =>
+            html`
+              <li><pre>${JSON.stringify(a, null, 2)}</pre></li>
+            `
+        )}
+    </ul>
+    <div class="row">
+      <div class="col-sm-12">
+        <label for="Goal">Goal</label>
+        <input
+          type="number"
+          id="goal"
+          placeholder="goal"
+          value=${goal}
+          onchange=${e => setGoal(e.target.value)}
+        />
+
+        <button
+          class="primary"
+          onclick=${async() => {
+            // lol validation
+            const newWeek = { ...blankWeek };
+            newWeek.goal = parseFloat(goal);
+            newWeek.week = rawWeeks.weeks.length + 1;
+            const newWeeks = [...rawWeeks.weeks, newWeek];
+            await updateBin({
+              data: { currentWeek: rawWeeks.currentWeek, weeks: newWeeks },
+              bin,
+              secret
+            });
+            // hobo soz
+            location.reload()
+          }}
+        >
+          Add week
+        </button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-12">
+      <button
+          class="primary"
+          onclick=${async() => {
+            await updateBin({
+              data: { currentWeek: rawWeeks.currentWeek+1, weeks: rawWeeks.weeks },
+              bin,
+              secret
+            });
+            // hobo soz
+            location.reload()
+          }}
+        >
+          Set Next week
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 function Settings({ bin: originalBin, secret: originalSecret }) {
@@ -93,6 +179,7 @@ function Settings({ bin: originalBin, secret: originalSecret }) {
           <mark class="secondary">${msg}</mark>
         `}
     </form>
+    <${WeeksList} bin=${bin} secret=${secret} />
   `;
 }
 function WeekTotal({ bin, secret }) {
@@ -119,19 +206,66 @@ function WeekTotal({ bin, secret }) {
     }
   }, [bin, secret]);
 
-  console.log({ currentWeek });
   return html`
     <h1>Total: ${currentWeek ? weekAmount(currentWeek) : 0} km</h1>
     <h2>Goal: ${currentWeek ? currentWeek.goal : 0} km</h2>
     <ul>
-        <li>Monday ${currentWeek && currentWeek.mon === 0 && html`<span class="icon-alert"></span>`}</li>
-        <li>Tuesday ${currentWeek && currentWeek.tue === 0 && html`<span class="icon-alert"></span>`}</li>
-        <li>Wednesday ${currentWeek && currentWeek.wed === 0 && html`<span class="icon-alert"></span>`}</li>
-        <li>Thursday ${currentWeek && currentWeek.thur === 0 && html`<span class="icon-alert"></span>`}</li>
-        <li>Friday ${currentWeek && currentWeek.fri === 0 && html`<span class="icon-alert"></span>`}</li>
-        <li>Saturday ${currentWeek && currentWeek.sat === 0 && html`<span class="icon-alert"></span>`}</li>
-        <li>Sunday ${currentWeek && currentWeek.sun === 0 && html`<span class="icon-alert"></span>`}</li>
-
+      <li>
+        Monday
+        ${currentWeek &&
+          currentWeek.mon === 0 &&
+          html`
+            <span class="icon-alert"></span>
+          `}
+      </li>
+      <li>
+        Tuesday
+        ${currentWeek &&
+          currentWeek.tue === 0 &&
+          html`
+            <span class="icon-alert"></span>
+          `}
+      </li>
+      <li>
+        Wednesday
+        ${currentWeek &&
+          currentWeek.wed === 0 &&
+          html`
+            <span class="icon-alert"></span>
+          `}
+      </li>
+      <li>
+        Thursday
+        ${currentWeek &&
+          currentWeek.thur === 0 &&
+          html`
+            <span class="icon-alert"></span>
+          `}
+      </li>
+      <li>
+        Friday
+        ${currentWeek &&
+          currentWeek.fri === 0 &&
+          html`
+            <span class="icon-alert"></span>
+          `}
+      </li>
+      <li>
+        Saturday
+        ${currentWeek &&
+          currentWeek.sat === 0 &&
+          html`
+            <span class="icon-alert"></span>
+          `}
+      </li>
+      <li>
+        Sunday
+        ${currentWeek &&
+          currentWeek.sun === 0 &&
+          html`
+            <span class="icon-alert"></span>
+          `}
+      </li>
     </ul>
 
     <form
@@ -139,7 +273,7 @@ function WeekTotal({ bin, secret }) {
         setMsg(null);
         e.preventDefault();
         // junk validation soz
-        if (day && dayAmount>=0) {
+        if (day && dayAmount >= 0) {
           const newWeeks = current.weeks.map(a => {
             if (a.week === current.currentWeek) {
               a[day] = parseFloat(dayAmount);
